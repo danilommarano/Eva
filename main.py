@@ -49,15 +49,6 @@ async def on_member_join(member):
   novatoa_role = discord.utils.get(member.guild.roles, name="Novato(a)")
   await member.add_roles(novatoa_role)
   
-
-  boas_vindas = client.get_channel(816451719205617695)
-  await boas_vindas.send(f"{uteis.saudacoes()} {member.name}!\n Seja muito bem vindo ao servidor do discord da Liga Academica Estudantil de Inteligencia Artificial & Ciência de Dados da Universidade Presbiteriana Mackenzie")
-  print(client.user)
-  await boas_vindas.send(file=discord.File('imgs/Rect_Icon_Txt.png'))
-  time.sleep(3)
-  await boas_vindas.send("Agora vou precisar registrar seus dados em nosso banco")
-  time.sleep(1)
-  await boas_vindas.send("Digite o seu **primeiro e último nome** em letras maiúsculas, como: EVA DOMINGUES")
 # —————————————————————————————————————————————————————————————————————————————————————— #
 
 
@@ -71,7 +62,6 @@ async def on_message(message):
   #txt.close()
   banco_de_dados.criar_usuario(message.author, conn)
 
-
 # ---------------------- Se for mensagem da Eva, não responda nada.--------------------- #
   if message.author == client.user:
     intro_msg = "Para você ter acesso ao nosso servidor vou precisar fazer três perguntinhas sobre seus dados mackenzistas. Se estiver pronto para responde-las clique no simbolo ✅ logo aqui embaixo."
@@ -79,7 +69,16 @@ async def on_message(message):
       await message.add_reaction('✅')
     return
 # -------------------------------------------------------------------------------------- #
- 
+
+# ---------------------------------- Cadastro dados ------------------------------------ #
+  if message.content.startswith('!nome'):
+    all_channels = [channel for channel in client.get_all_channels()]
+    if message.channel.id not in all_channels:
+      name = message.content.split()[1:]
+      name = ' '.join(name).lower()
+      # TODO: query salva no banco de dados
+      message.channel.send("Agor")
+
 # ---------------------------------- Comando: !count ----------------------------------- #
   if message.content.startswith('!count'):
     cursor = conn.cursor()
@@ -131,5 +130,11 @@ async def on_message(message):
 # -------------------------------------------------------------------------------------- #
 # —————————————————————————————————————————————————————————————————————————————————————— #
 
-
+@client.event
+async def on_reaction_add(reaction, user):
+  boas_vindas = client.get_channel(816451719205617695)
+  if (str(reaction) == '✅') and (user != client.user) and (reaction.message.channel == boas_vindas):
+    await user.send('Oie!') 
+    await user.send('Vou precisar do seu nome. Para que eu possa ')
+    
 client.run(os.getenv('TOKEN'))
