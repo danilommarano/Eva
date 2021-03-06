@@ -3,53 +3,26 @@ import os
 import time
 import sqlite3
 #from neuralnet.neruralnet import *
-
+import banco_de_dados
+import matplotlib.pyplot as plt
 import uteis
 import translate
+import seaborn
 
-#os.system('pip3 install tf-nightly')
-os.system('pip3 install requests')
-os.system('pip3 install google_trans_new')
+import base64
+import io 
 
 
-# Estabelece conexão com o banco de dados dados.db
+# os.system('pip3 install requests')
+# os.system('pip3 install google_trans_new')
+
 conn = sqlite3.connect('dados.db')
-cursor = conn.cursor()
-
-# Se não existir, cria a tabela membros no banco de dados 
-try:
-  cursor.execute("""
-  CREATE TABLE membros (
-          nome TEXT NOT NULL,
-          tia INTEGER,
-          email TEXT,
-          nomeservidor TEXT,
-          mensagens INTEGER NOT NULL,
-          datelogin DATE NOT NULL,
-  );
-  """)
-except:
-  pass
+banco_de_dados.create_table_if_not()
 
 # Gera uma instância da Eva
 intents = discord.Intents.default()
 intents.members = True
 client = discord.Client(intents=intents)
-
-# Essa função pode ser armazenada num outro arquivo, um destinado para funções do banco de dados?
-def criar_usuario(author):
-  cursor = conn.cursor()
-  cursor.execute(f"""SELECT nome, mensagens FROM clientes WHERE nome = '{author}' """)
-  res = cursor.fetchall()
-
-  cursor = conn.cursor()
-  if res == []: 
-    cursor.execute(f"""INSERT INTO clientes (nome, mensagens) VALUES ('{author}', 1)""")
-    conn.commit()
-  else: 
-    cursor.execute(f"""UPDATE clientes SET mensagens = {int(res[0][1]) + 1} WHERE nome = '{author}'""") 
-    conn.commit()
-
 
 # cursor = conn.cursor()
 # cursor.execute(f"""UPDATE clientes SET email = 'gustavo.b.schwarz@gmail.com', tia = '32141157' WHERE nome = '{message.author}'""") 
@@ -59,7 +32,11 @@ def criar_usuario(author):
 # ————————————————————————————————— Evento: Eva online ————————————————————————————————— #
 @client.event
 async def on_ready():
-  print(client.user)
+  boas_vindas = client.get_channel(816451719205617695)
+  await boas_vindas.send(f"{uteis.saudacoes()}! Seja muito bem vindo ao servidor do discord da Liga Academica Estudantil de Inteligencia Artificial & Ciência de Dados da Universidade Presbiteriana Mackenzie.")
+  await boas_vindas.send(file=discord.File('imgs/Rect_Icon_Txt.png'))
+  await boas_vindas.send("Para você ter acesso ao nosso servidor vou precisar fazer três perguntinhas sobre seus dados mackenzistas. Se estiver pronto para responde-las clique no simbolo ✅ logo aqui embaixo.")
+ 
 # —————————————————————————————————————————————————————————————————————————————————————— #
 
 
@@ -69,6 +46,10 @@ async def on_member_join(member):
   """
   Deseja boas vindas aos novos membros da liga mo
   """
+  novatoa_role = discord.utils.get(member.guild.roles, name="Novato(a)")
+  await member.add_roles(novatoa_role)
+  
+
   boas_vindas = client.get_channel(816451719205617695)
   await boas_vindas.send(f"{uteis.saudacoes()} {member.name}!\n Seja muito bem vindo ao servidor do discord da Liga Academica Estudantil de Inteligencia Artificial & Ciência de Dados da Universidade Presbiteriana Mackenzie")
   print(client.user)
@@ -88,30 +69,42 @@ async def on_message(message):
   #txt = open('neuralnet/mensagens.txt', 'a')
   #txt.write(message.content)
   #txt.close()
-  #criar_usuario(message.author)
+  banco_de_dados.criar_usuario(message.author, conn)
 
 
 # ---------------------- Se for mensagem da Eva, não responda nada.--------------------- #
   if message.author == client.user:
+    intro_msg = "Para você ter acesso ao nosso servidor vou precisar fazer três perguntinhas sobre seus dados mackenzistas. Se estiver pronto para responde-las clique no simbolo ✅ logo aqui embaixo."
+    if message.content == intro_msg:
+      await message.add_reaction('✅')
     return
-# -------------------------------------------------------------------------------------- #
-
-# ----------------------- Nova mensagem no canal 🖖boas-vindas  ------------------------ #
-  if message.channel.id == 816451719205617695 and message.author != client.user:
-    boas_vindas = client.get_channel(816451719205617695)
-    if message.content == message.content.title():
-      cursor.execute(f"""UPDATE clientes SET nomeservidor = {message.content} WHERE nome = '{message.author}'""") 
-      await boas_vindas.send()
-
-    await message.channel.send(message.content)
-    pass
 # -------------------------------------------------------------------------------------- #
  
 # ---------------------------------- Comando: !count ----------------------------------- #
   if message.content.startswith('!count'):
     cursor = conn.cursor()
-    cursor.execute(f"""SELECT nome, mensagens FROM clientes WHERE nome = '{message.author}' """)
+    cursor.execute(f"""SELECT nome, mensagens FROM membros WHERE nome = '{message.author}' """)
     res = cursor.fetchall()
+
+    cursor.execute("""SELECT nome, mensagens FROM membros""")
+    res_plot = cursor.fetchall()
+
+    pessoas = []
+    mensagens = []
+
+    for value in res_plot:
+      pessoas.append(value[0])
+      mensagens.append(value[1])
+
+    plt.bar(pessoas, mensagens, width=0.25)
+    plt.title("Number of messages")
+    
+    IObytes = io.BytesIO()
+    plt.savefig(IObytes,  format='png')
+    IObytes.seek(0)
+
+    await message.channel.send(file=discord.File(IObytes, 'plot.png'))
+
     await message.channel.send(f"{message.author} sent {res[0][1]} messages!")
 # -------------------------------------------------------------------------------------- #
 

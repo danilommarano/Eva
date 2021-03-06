@@ -17,6 +17,7 @@ def show_commands():
   texto += "```"
   return texto
 
+
 def saudacoes():
   """
   Retorna uma string com a saudação correta de acordo com o horário do dia 
@@ -30,3 +31,5 @@ def saudacoes():
     return 'Boa tarde'
   else:
     return 'Boa noite'
+
+
